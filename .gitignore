@@ -1,0 +1,37 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfplan
+*.tfvars
+!terraform.tfvars.example
+
+# Sensitive files
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Lambda packages
+lambda/*.zip
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Logs
+*.log
+
+# Backup files
+*.bak

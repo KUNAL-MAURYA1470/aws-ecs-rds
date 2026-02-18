@@ -1,0 +1,39 @@
+# Basic Configuration
+aws_region   = "us-east-1"
+project_name = "ecs-rds-poc"
+environment  = "dev"
+
+# VPC Configuration
+vpc_cidr = "10.0.0.0/16"
+azs      = ["us-east-1a", "us-east-1b"]
+
+# ECS Configuration (minimal for POC)
+ecs_desired_count    = 1
+ecs_min_capacity     = 1
+ecs_max_capacity     = 2
+ecs_container_cpu    = 256
+ecs_container_memory = 512
+ecs_container_port   = 80  # Change to 8080 for your app
+
+# Docker image - REPLACE with your actual image
+ecs_task_image = "nginx:latest"
+
+# RDS Configuration (minimal for POC)
+db_instance_class          = "db.t4g.micro"
+db_allocated_storage       = 20
+db_name                    = "appdb"
+db_username                = "app_user"
+db_backup_retention_period = 1
+db_multi_az                = false
+
+# ALB Configuration
+alb_idle_timeout = 60
+
+# WAF Configuration
+waf_rate_limit = 2000
+
+# Tags
+tags = {
+  Purpose = "POC"
+  Owner   = "DevTeam"
+}

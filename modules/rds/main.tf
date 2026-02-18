@@ -3,9 +3,9 @@ data "aws_region" "current" {}
 data "aws_caller_identity" "current" {}
 
 resource "random_password" "db" {
-  length              = 24
-  special             = true
-  override_characters = "!#$%&*()-_=+[]{}<>?@"
+  length  = 24
+  special = true
+  override_special = "!#$%&*()-_=+<>?"
 }
 
 resource "aws_db_subnet_group" "this" {
@@ -210,12 +210,21 @@ resource "aws_lambda_function" "rotation" {
     security_group_ids = var.rotation_lambda_security_group_ids
   }
 
+  depends_on = [aws_iam_role_policy_attachment.rotation_lambda]
+
   tags = merge(
     var.tags,
     {
       Name = "${var.name_prefix}-rds-rotation"
     },
   )
+}
+
+resource "aws_lambda_permission" "allow_secretsmanager" {
+  statement_id  = "AllowExecutionFromSecretsManager"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.rotation.function_name
+  principal     = "secretsmanager.amazonaws.com"
 }
 
 resource "aws_secretsmanager_secret_rotation" "db" {
@@ -226,6 +235,9 @@ resource "aws_secretsmanager_secret_rotation" "db" {
     automatically_after_days = 30
   }
 
-  depends_on = [aws_secretsmanager_secret_version.db]
+  depends_on = [
+    aws_secretsmanager_secret_version.db,
+    aws_lambda_permission.allow_secretsmanager
+  ]
 }
 
