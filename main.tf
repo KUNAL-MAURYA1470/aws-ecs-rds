@@ -11,6 +11,14 @@ locals {
   )
 }
 
+module "ecr" {
+  source = "./modules/ecr"
+
+  repository_name = "${local.name_prefix}-app"
+
+  tags = local.common_tags
+}
+
 module "vpc" {
   source = "./modules/vpc"
 

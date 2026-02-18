@@ -38,3 +38,8 @@ output "ecs_service_name" {
   value       = module.ecs.service_name
 }
 
+output "ecr_repository_url" {
+  description = "URL of the ECR repository."
+  value       = module.ecr.repository_url
+}
+

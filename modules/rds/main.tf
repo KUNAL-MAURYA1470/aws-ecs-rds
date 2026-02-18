@@ -93,6 +93,7 @@ resource "aws_db_instance" "this" {
   db_name                      = var.db_name
   backup_retention_period      = var.backup_retention_period
   deletion_protection          = true
+  skip_final_snapshot          = true
   publicly_accessible          = false
   apply_immediately            = true
   parameter_group_name         = aws_db_parameter_group.this.name
