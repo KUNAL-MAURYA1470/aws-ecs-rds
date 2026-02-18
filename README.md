@@ -117,13 +117,7 @@ See `terraform.tfvars.example` for all available options.
 aws logs tail /ecs/your-project-name --follow --region us-east-1
 ```
 
-### Check Service Health
-```bash
-aws ecs describe-services \
-  --cluster your-cluster-name \
-  --services your-service-name \
-  --region us-east-1
-```
+
 
 ## Database Access
 
@@ -158,17 +152,5 @@ aws rds modify-db-instance \
   --region us-east-1
 ```
 
-## Cost Estimate
 
-Approximate monthly costs (us-east-1):
-- ECS Fargate (1 task, 0.25 vCPU, 0.5 GB): ~$15
-- RDS db.t4g.micro (20 GB storage): ~$15
-- Application Load Balancer: ~$20
-- NAT Gateway: ~$32
-- Data transfer: Variable
 
-**Total: ~$82-92/month** (excluding data transfer)
-
-## License
-
-MIT
