@@ -1,33 +1,16 @@
 # 🚀 AWS ECS + RDS Infrastructure - Production-Grade 2-Tier Architecture
 
-[![Terraform](https://img.shields.io/badge/Terraform-v1.8+-623CE4?style=flat&logo=terraform)](https://www.terraform.io/) [![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/) [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE) [![Maintained](https://img.shields.io/badge/Maintained-Yes-brightgreen.svg)](https://github.com/KUNAL-MAURYA1470/aws-ecs-rds)
-
-> Enterprise-grade Infrastructure as Code (IaC) for deploying containerized applications on AWS ECS Fargate with PostgreSQL RDS. Built with Terraform for scalability, security, and high availability.
-
----
-
-## 📋 Table of Contents
-
-- [Architecture Overview](#-architecture-overview)
-- [Features](#-features)
-- [Infrastructure Components](#-infrastructure-components)
-- [Prerequisites](#-prerequisites)
-- [Quick Start](#-quick-start)
-- [Module Documentation](#-module-documentation)
-- [Configuration](#-configuration)
-- [Security Features](#-security-features)
-- [Monitoring & Observability](#-monitoring--observability)
-- [Database Access](#-database-access)
-- [Cost Optimization](#-cost-optimization)
-- [Troubleshooting](#-troubleshooting)
-- [Cleanup](#-cleanup)
-- [License](#-license)
+[![Terraform](https://img.shields.io/badge/Terraform-v1.8+-623CE4?style=flat&logo=terraform)](https://www.terraform.io/) [![AWS](https://img.shields.io/badge/AWS-Cloud-FF9900?style=flat&logo=amazon-aws)](https://aws.amazon.com/)
+>  Infrastructure as Code (IaC) for deploying containerized applications on AWS ECS Fargate with PostgreSQL RDS. Built with Terraform for scalability, security, and high availability.
 
 ---
+
+
 
 ## 🏗️ Architecture Overview
 
-![Infrastructure Architecture](./architecture-2tier.png)
+<img width="991" height="851" alt="aws_tier-2 drawio" src="https://github.com/user-attachments/assets/b30e54fe-8e97-47c9-9da5-4869a717b9fd" />
+
 
 *Complete 2-tier architecture showcasing ECS Fargate, RDS PostgreSQL, and supporting AWS services*
 
@@ -169,33 +152,7 @@ terraform plan
 terraform apply
 ```
 
-### 6️⃣ Build and Push Docker Image to ECR
 
-```bash
-# Get ECR repository URL
-ECR_URL=$(terraform output -raw ecr_repository_url)
-
-# Login to ECR
-aws ecr get-login-password --region us-east-1 | \
-  docker login --username AWS --password-stdin $ECR_URL
-
-# Build and push your image
-docker build -t my-app .
-docker tag my-app:latest $ECR_URL:latest
-docker push $ECR_URL:latest
-```
-
-### 7️⃣ Update ECS Service
-
-After pushing your image, update the ECS service:
-
-```bash
-aws ecs update-service \
-  --cluster $(terraform output -raw ecs_cluster_name) \
-  --service $(terraform output -raw ecs_service_name) \
-  --force-new-deployment \
-  --region us-east-1
-```
 
 ### 8️⃣ Access Your Application
 
@@ -483,21 +440,6 @@ The RDS credentials are automatically injected into ECS tasks:
 
 ## 💰 Cost Optimization
 
-### Estimated Monthly Cost (us-east-1)
-
-| Service | Configuration | Estimated Cost |
-|---------|---------------|----------------|
-| ECS Fargate | 2 tasks (0.5 vCPU, 1 GB) | ~$30 |
-| Application Load Balancer | 1 ALB + data processing | ~$20 |
-| NAT Gateway | 1 NAT Gateway + data transfer | ~$32 |
-| RDS PostgreSQL | db.t4g.medium (50 GB storage) | ~$60 |
-| ECR | Storage + data transfer | ~$5 |
-| Secrets Manager | 1 secret with rotation | ~$1 |
-| CloudWatch Logs | 30-day retention | ~$5 |
-| **Total** | | **~$153/month** |
-
-*Costs vary based on data transfer, storage, and actual usage*
-
 ### Cost-Saving Tips
 
 1. **Use Fargate Spot** for non-critical workloads (70% savings)
@@ -523,105 +465,9 @@ The RDS credentials are automatically injected into ECS tasks:
    - Cost-effective for dev/staging
    - For production, consider Multi-AZ NAT for higher availability
 
----
 
-## 🐛 Troubleshooting
 
-### Issue 1: ECS Tasks Failing to Start
 
-**Symptom**: Tasks stuck in "PENDING" state or immediately stopping
-
-**Solution**:
-```bash
-# Check CloudWatch logs
-aws logs tail /ecs/my-app-prod --follow
-
-# Common causes:
-# 1. Image pull errors - verify ECR permissions
-# 2. Insufficient memory/CPU - check task definition
-# 3. Health check failures - verify /health endpoint
-# 4. Security group blocking traffic - check SG rules
-```
-
-### Issue 2: ALB Health Checks Failing
-
-**Symptom**: Targets marked as unhealthy in target group
-
-**Solution**:
-```bash
-# Verify health check endpoint responds
-curl http://<task-ip>:8080/health
-
-# Check security group rules
-aws ec2 describe-security-groups \
-  --group-ids $(terraform output -raw ecs_security_group_id)
-
-# Update health check path if needed
-# Edit modules/alb/main.tf and change path = "/health"
-```
-
-### Issue 3: Cannot Connect to RDS
-
-**Symptom**: Connection timeout or refused
-
-**Solution**:
-```bash
-# Verify security group allows traffic from ECS
-# Check main.tf - aws_security_group_rule.rds_ingress_from_ecs
-
-# Verify RDS is running
-aws rds describe-db-instances \
-  --db-instance-identifier my-app-prod-postgres
-
-# Check if RDS is in private subnet (should be)
-# RDS should NOT be publicly accessible
-```
-
-### Issue 4: High RDS CPU Usage
-
-**Symptom**: Database performance degradation
-
-**Solution**:
-```bash
-# Check Performance Insights
-aws rds describe-db-instances \
-  --db-instance-identifier my-app-prod-postgres \
-  --query 'DBInstances[0].PerformanceInsightsEnabled'
-
-# Scale up instance class
-# Update terraform.tfvars:
-# db_instance_class = "db.t4g.large"
-# Then: terraform apply
-```
-
-### Issue 5: Terraform Apply Fails
-
-**Common Errors**:
-
-1. **Secret already exists**:
-   ```bash
-   # Delete existing secret
-   aws secretsmanager delete-secret \
-     --secret-id my-app-prod/rds/postgresql \
-     --force-delete-without-recovery
-   ```
-
-2. **NAT Gateway allocation limit**:
-   ```bash
-   # Request limit increase via AWS Support
-   # Or release unused Elastic IPs
-   ```
-
-3. **RDS deletion protection**:
-   ```bash
-   # Disable deletion protection
-   aws rds modify-db-instance \
-     --db-instance-identifier my-app-prod-postgres \
-     --no-deletion-protection \
-     --apply-immediately
-   ```
-
----
 
 ## 🧹 Cleanup
 
@@ -643,7 +489,7 @@ aws rds wait db-instance-available \
 terraform destroy
 ```
 
-### Manual Cleanup (if needed)
+### Manual Cleanup 
 
 ```bash
 # Delete ECR images
@@ -657,32 +503,90 @@ aws secretsmanager delete-secret \
   --force-delete-without-recovery
 ```
 
----
-
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
+### Resources Screenshot  
 
-## 🤝 Contributing
+### VPC
+<img width="941" height="71" alt="image" src="https://github.com/user-attachments/assets/26be6a4b-7d96-4f76-ad56-313472219047" />
+<img width="941" height="300" alt="image" src="https://github.com/user-attachments/assets/7573d013-63da-4bbe-b216-9693bb0bba0a" />
 
-Contributions are welcome! Please follow these guidelines:
+### Subnets
+<img width="941" height="156" alt="image" src="https://github.com/user-attachments/assets/779f4007-fb7d-40fa-a9b0-da668687d187" />
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
+### Route tables
+<img width="941" height="169" alt="image" src="https://github.com/user-attachments/assets/d3deef73-f67a-4eaa-b54d-1649983f8b82" />
 
----
+### Internet Gateway
+<img width="941" height="170" alt="image" src="https://github.com/user-attachments/assets/55deba98-0bc9-4b80-9088-1323cab07e58" />
 
-## 📞 Support
+### Elastic IP address
+<img width="941" height="121" alt="image" src="https://github.com/user-attachments/assets/8bd95c94-14f4-4fe3-bf50-2aa17d589018" />
 
-For issues and questions:
-- Open an issue on [GitHub](https://github.com/KUNAL-MAURYA1470/aws-ecs-rds/issues)
-- Review the [Troubleshooting](#-troubleshooting) section
+### NAT gateway
+<img width="941" height="113" alt="image" src="https://github.com/user-attachments/assets/008d85a2-1db6-4d3c-8840-d6807ea13dce" />
 
----
+### ECS Clusters 
+<img width="941" height="146" alt="image" src="https://github.com/user-attachments/assets/10139296-0bf8-4761-975c-1973ff2b11c1" />
 
-**⭐ If you find this project helpful, please consider giving it a star!**
+
+### ECS Service 
+ <img width="941" height="198" alt="image" src="https://github.com/user-attachments/assets/de2cb5d8-2891-4889-925a-f37ff7951020" />
+
+### Task Definitions
+<img width="941" height="147" alt="image" src="https://github.com/user-attachments/assets/87fcc1a2-3379-43aa-a64d-69c06be7e2be" />
+
+<img width="941" height="397" alt="image" src="https://github.com/user-attachments/assets/59bd03cf-cd8d-4351-b218-da1b20741ef4" />
+
+###  RDS Instances  PostgreSQL database 
+
+<img width="941" height="397" alt="image" src="https://github.com/user-attachments/assets/829441f7-7f02-4d24-8990-ac85bba57538" />
+
+### Database connectivity & security settings
+
+<img width="941" height="283" alt="image" src="https://github.com/user-attachments/assets/b4ca8568-2952-42a9-8de4-d0c5f3f7fb8e" />
+
+<img width="941" height="170" alt="image" src="https://github.com/user-attachments/assets/be7948ec-4091-48c5-be0a-499f53ebab60" />
+
+<img width="941" height="172" alt="image" src="https://github.com/user-attachments/assets/b9348273-ac1f-4474-8151-b2a878b9f1c0" />
+
+### Secrets Manager 
+
+<img width="941" height="101" alt="image" src="https://github.com/user-attachments/assets/f3a367ce-24bf-4273-9b9c-5e4a18ac949a" />
+
+<img width="941" height="301" alt="image" src="https://github.com/user-attachments/assets/bc4052c9-01bc-4aea-902f-331ca6e57384" />
+
+### Secret rotation configuration 
+
+<img width="941" height="309" alt="image" src="https://github.com/user-attachments/assets/740de183-336a-4444-af0e-f90a2c23a202" />
+
+### lamda  rotatation function  
+
+<img width="941" height="396" alt="image" src="https://github.com/user-attachments/assets/2b74484c-777e-4ef5-b200-9fceb5680457" />
+
+### ALB details page 
+
+<img width="941" height="182" alt="image" src="https://github.com/user-attachments/assets/2e9f8325-0090-4605-a742-4cbf192912d2" />
+
+### Listener rules
+
+<img width="941" height="195" alt="image" src="https://github.com/user-attachments/assets/84a884ab-4280-47c6-81cf-b1efb4ffea85" />
+
+### WAF
+
+<img width="941" height="193" alt="image" src="https://github.com/user-attachments/assets/a61d5456-bb66-488f-b376-c0eacc090084" />
+
+### Metrics/monitoring
+
+<img width="941" height="399" alt="image" src="https://github.com/user-attachments/assets/4e490e05-3399-414f-8080-70539d638d92" />
+
+
+### IAM Roles 
+
+<img width="941" height="329" alt="image" src="https://github.com/user-attachments/assets/eaf5f3cc-5085-490d-8f4a-8a02832f1050" />
+
+### S3 bucket
+
+<img width="941" height="226" alt="image" src="https://github.com/user-attachments/assets/24a004c3-3208-4307-ba67-d7373ece8bb1" />
+
+<img width="941" height="174" alt="image" src="https://github.com/user-attachments/assets/bba135a5-7c06-44b2-95da-e67610fe3d8e" />
